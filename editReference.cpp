@@ -98,6 +98,23 @@ void editRef(){
 }
 
 
+void countChr(){
+  int ctr=0, n=-1;
+  while(!fRef.eof()){
+    char c;
+    fRef.get(c);
+    if(c=='>'){
+      cout << n << ": " << ctr << endl;
+      ctr=0;
+      n++;
+    }
+    else if(c=='A' || c=='T' || c=='C' || c=='G')
+      ctr++;
+  }
+  cout << n << ": " << ctr << endl;
+}
+
+
 int main(int argc, char *argv[]){ //<ref_genome> <normal_freq>
   std::ios::sync_with_stdio(false); cin.tie(NULL);
   fRef.open(argv[1]);
@@ -111,9 +128,11 @@ int main(int argc, char *argv[]){ //<ref_genome> <normal_freq>
   normals.push({1, 15, '.'});
   normals.push({2, 45, '.'});
   normals.push({2, 115, '.'});
-  normals.push({3, 100, '.'});
+  normals.push({3, 251, '.'});
+  normals.push({3, 300, '.'});
   cout << "----Substituting normal mutations into reference genome..." << '\n';
-  editRef();
+  // editRef();
+  countChr();
 
   cout << "----Done" << '\n';
   cout << "------Executed in " << ((float)(clock()-t))/CLOCKS_PER_SEC << " seconds." << '\n';
