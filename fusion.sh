@@ -2,6 +2,7 @@
 ##Written by Lyron Co Ting Keh 6/19/17
 
 ## sh fusion.sh hg19.fa Sample_DLBCL021_Normal.singleindex-deduped.sorted.freq.paired.Q30.txt Sample_DLBCL021-Tumor.singleindex-deduped.sorted.bam
+## sh fusion.sh test.txt blah blah
 
 if [ -z "$3" ]
 then
@@ -16,5 +17,4 @@ ref_genome=$1
 normal_file_name=$2
 bam_file_name=$3
 
-clang++ -std=c++11 -stdlib=libc++ editReference.cpp -o editReference #remove this
 ./editReference $ref_genome $normal_file_name
