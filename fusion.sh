@@ -1,20 +1,28 @@
 #!/bin/bash
 ##Written by Lyron Co Ting Keh 6/19/17
 
-## sh fusion.sh hg19.fa Sample_DLBCL021_Normal.singleindex-deduped.sorted.freq.paired.Q30.txt Sample_DLBCL021-Tumor.singleindex-deduped.sorted.bam
-## sh fusion.sh test.txt blah blah
+## bash fusion.sh hg19.fa Sample_DLBCL021_Normal.singleindex-deduped.sorted.freq.paired.Q30.txt Sample_DLBCL021_Tumor.sorted.bam Sample_DLBCL021-Tumor.singleindex-deduped.sorted.bam 
+## bash fusion.sh test.txt blah blah
 
 if [ -z "$3" ]
 then
-        echo "\nUsage: sh $0 <ref_genome> <normal_freq> <tumor_bam>\n"
-        echo "  ref_genome: Reference genome provided will be EDITED\n"
-        echo "  normal_freq: Used to substitute normal mutations into the reference genome\n"
-        echo "  tumor_bam: Find fusions inside this file\n"
-        exit 1
+    echo "\nUsage: sh $0 <ref_genome> <normal_freq> <tumor_bam> <tumor_deduped_bam>\n"
+    echo "  ref_genome: Reference genome provided will be EDITED\n"
+    echo "  normal_freq: Used to substitute normal mutations into the reference genome\n"
+    echo "  tumor_bam: Find fusions inside this file, must contain unmapped reads\n"
+    exit 1
 fi
 
-ref_genome=$1
-normal_file_name=$2
-bam_file_name=$3
+ref=$1
+normal=$2
+bam=$3
+deduped_bam=$4
 
-./editReference $ref_genome $normal_file_name
+
+# ./editReference $ref $normal
+# bwa index $ref
+
+
+sample_name=$(echo $bam | cut -d '_' -f 2- | cut -d '.' -f 1)
+bedtools bamtofastq -i <(samtools view -b -f 4 $bam) -fq $sample_name.unmapped.fq
+

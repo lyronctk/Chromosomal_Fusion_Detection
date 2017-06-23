@@ -16,7 +16,8 @@ struct Mutation{
 const double AF_THRESHOLD=0.9; //allele freq 
 const int HEADER_CHARS=6; //number of bases on a header line in hg19 (+1 to account for \n)
 const int SEQUENCE_CHARS=51; //number of bases on a line in hg19 (+1 to account for \n)
-const int CHR_SIZES[] = {16900, 1321120100, 675007400, 201982800, 236608100, 184533500, 213748200, 162508000, 149368900, 185015300, 138245400, 178191400, 136528900, 117473200, 109496500, 104582000, 92161800, 88624000, 79643200, 100409800, 64286000, 88933800, 52330600, 158375900, 60561000};
+const int CHR_SIZES[] = {16571, 249250621, 243199373, 198022430, 191154276, 180915260, 171115067, 159138663, 146364022, 141213431, 135534747, 135006516, 133851895, 115169878, 107349540, 102531392, 90354753, 81195210, 78077248, 59128983, 63025520, 48129845, 51304556, 155270560, 59373566};
+// const int CHR_SIZES[] = {459, 498, 451, 481, 51};
 
 fstream fRef;
 ifstream fNormal;
@@ -69,13 +70,38 @@ void editRef(){
     Mutation current = normals.front();
 
     // cout << current.chr << "-" << current.position << " - " << current.base << "  (" << chrCtr << " - " << sequencePos << ')' <<  '\n';
-    // if(current.chr ==1 && current.position > 1289991)
-    //   return;
-    if(current.chr == chrCtr && current.position-sequencePos<SEQUENCE_CHARS-1){ //mutation is on current line or nearing the end of the chromosome (where the SEQUENCE_CHARS is not constant)
+    if(chrCtr!=-1 && CHR_SIZES[chrCtr]-sequencePos<SEQUENCE_CHARS*2) //getting close to end of chr, where SEQUENCE_CHARS is not constant
+      while(true){
+        char c;
+        fRef.get(c);
+        if(c=='A' || c=='T' || c=='C' || c=='G' || c=='a' || c=='t' || c=='c' || c=='g' || c=='N'){
+          if(chrCtr == current.chr && sequencePos==current.position){
+            fRef.seekg(-1, ios::cur);
+            fRef.put(current.base);
+            normals.pop();
+            if(normals.empty()) return;
+            current = normals.front();
+          }
+          sequencePos++;
+        }
+        else if(c=='>'){
+          fRef.putback(c);
+          break;
+        }
+      }
+
+    if(fRef.peek() == '>'){ //on header line
+      fRef.seekg(HEADER_CHARS, ios::cur);
+      chrCtr++;
+      sequencePos=1;
+    }
+    else if(current.chr == chrCtr && current.position-sequencePos<SEQUENCE_CHARS-1){ //mutation is on current line or nearing the end of the chromosome (where the SEQUENCE_CHARS is not constant)
       for(int i=0; i<SEQUENCE_CHARS-1; i++){
-        if(current.position == i+sequencePos){
+        if(current.chr == chrCtr && current.position == i+sequencePos){
+          fRef.seekg(0, ios::cur);
           fRef.put(current.base);
           normals.pop();
+          if(normals.empty()) return;
           current = normals.front();
         }
         else
@@ -84,34 +110,18 @@ void editRef(){
       fRef.seekg(1, ios::cur);
       sequencePos+=SEQUENCE_CHARS-1;
     }
-    else if(fRef.peek() == '>'){ //on header line
-      fRef.seekg(HEADER_CHARS, ios::cur);
-      chrCtr++;
-      sequencePos=1;
-    }
     else{
-      fRef.seekg(SEQUENCE_CHARS, ios::cur); //skips line
-      sequencePos+=SEQUENCE_CHARS-1;
+      int skip=0;
+      if(current.chr == chrCtr)
+        skip = current.position; 
+      else
+        skip = CHR_SIZES[chrCtr];
+      skip -= sequencePos; skip -= SEQUENCE_CHARS; skip /= SEQUENCE_CHARS; //subtracting SEQUENCE_CHARS to avoid corner cases
+      skip = max(skip, 1);
+      fRef.seekg(SEQUENCE_CHARS*skip, ios::cur); //skips multiple lines
+      sequencePos+=(SEQUENCE_CHARS-1)*skip;
     }
-
   }
-}
-
-
-void countChr(){
-  int ctr=0, n=-1;
-  while(!fRef.eof()){
-    char c;
-    fRef.get(c);
-    if(c=='>'){
-      cout << n << ": " << ctr << endl;
-      ctr=0;
-      n++;
-    }
-    else if(c=='A' || c=='T' || c=='C' || c=='G')
-      ctr++;
-  }
-  cout << n << ": " << ctr << endl;
 }
 
 
@@ -120,22 +130,16 @@ int main(int argc, char *argv[]){ //<ref_genome> <normal_freq>
   fRef.open(argv[1]);
   fNormal.open(argv[2]);
 
-  clock_t t;
-  t = clock();
+  // clock_t t;
+  // t = clock();
 
-  // cout << "----Storing normal mutations..." << '\n';
-  // storeNormals();
-  normals.push({1, 15, '.'});
-  normals.push({2, 45, '.'});
-  normals.push({2, 115, '.'});
-  normals.push({3, 251, '.'});
-  normals.push({3, 300, '.'});
+  cout << "----Storing normal mutations..." << '\n';
+  storeNormals();
   cout << "----Substituting normal mutations into reference genome..." << '\n';
-  // editRef();
-  countChr();
+  editRef();
 
-  cout << "----Done" << '\n';
-  cout << "------Executed in " << ((float)(clock()-t))/CLOCKS_PER_SEC << " seconds." << '\n';
+  // cout << "----Done" << '\n';
+  // cout << "------Executed in " << ((float)(clock()-t))/CLOCKS_PER_SEC << " seconds." << '\n';
 
   fRef.close();
   fNormal.close();
