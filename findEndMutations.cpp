@@ -6,9 +6,8 @@
 #include <set>
 using namespace std;
 // clang++ -std=c++11 -stdlib=libc++ findEndMutations.cpp -o findEndMutations
-// ./findEndMutations DLBCL021_Tumor.mutatedrows.sorted.txt DLBCL021_Tumor.deduped.sam DLBCL021_Tumor.left.fq DLBCL021_Tumor.right.fq
+// ./findEndMutations DLBCL021_Tumor.mutatedrows.sorted.txt 25 DLBCL021_Tumor.deduped.sam DLBCL021_Tumor.left.fq DLBCL021_Tumor.right.fq
 
-const int END_LENGTH = 20;
 
 struct Read{
   string header="";
@@ -32,12 +31,12 @@ bool isReadPaired(string &current, string &before){
 }
 
 
-bool containsEndMutations(set<int> &mutations, int start, int end){
+bool containsEndMutations(set<int> &mutations, int start, int end, int endLength){
   bool left=false, right=false;
   for(int n : mutations){
-    if(n < start+END_LENGTH)
+    if(n < start+endLength)
       left = true;
-    else if(n > end-END_LENGTH)
+    else if(n > end-endLength)
       right = true;
   }
   return left && right;
@@ -45,7 +44,7 @@ bool containsEndMutations(set<int> &mutations, int start, int end){
 
 
 unordered_set<string> endMutations;
-void storeEndMutations(){
+void storeEndMutations(int endLength){
   int readCtr = 0;
   while(!fRows.eof()){ 
     Read &current = reads[readCtr], &before = reads[(readCtr+1)%2];
@@ -56,7 +55,7 @@ void storeEndMutations(){
     if(L == "") continue;
     L.pop_back(); current.length = stoi(L);
     
-    assert(current.length > END_LENGTH*2 && "Error: Read length is too short, input longer reads or change the constant END_LENGTH in the code");
+    assert(current.length > endLength*2 && "Error: Read length is too short, input longer reads or change the constant endLength in the code");
 
     char c;
     int readPos = -1;
@@ -71,11 +70,11 @@ void storeEndMutations(){
 
     if(isReadPaired(current.header, before.header)){
       current.mutations.insert(before.mutations.begin(), before.mutations.end());
-      if(containsEndMutations(current.mutations, before.startPos, current.startPos+current.length-1))
+      if(containsEndMutations(current.mutations, before.startPos, current.startPos+current.length-1, endLength))
         endMutations.emplace(current.header);
       current.mutations.clear();
     }
-    else if(!before.mutations.empty() && containsEndMutations(before.mutations, before.startPos, before.startPos+before.length-1))
+    else if(!before.mutations.empty() && containsEndMutations(before.mutations, before.startPos, before.startPos+before.length-1, endLength))
       endMutations.emplace(before.header);
 
     readCtr = (readCtr+1)%2;
@@ -83,7 +82,7 @@ void storeEndMutations(){
 
   // repeated code for final read in file 
   Read &before = reads[(readCtr+1)%2];
-  if(!before.mutations.empty() && containsEndMutations(before.mutations, before.startPos, before.startPos+before.length-1))
+  if(!before.mutations.empty() && containsEndMutations(before.mutations, before.startPos, before.startPos+before.length-1, endLength))
     endMutations.emplace(before.header);
 }
 
@@ -97,7 +96,7 @@ void printModifiedHeader(string &header, ofstream &out){
 }
 
 
-void findInDeduped(){
+void findInDeduped(int endLength){
   while(!fDeduped.eof()){
     string header="", filler, sequence, score;
     fDeduped >> header >> filler >> filler >> filler >> filler >> filler >> filler >> filler >> filler >> sequence >> score;
@@ -105,8 +104,8 @@ void findInDeduped(){
 
     if(endMutations.find(header) != endMutations.end()){
       printModifiedHeader(header, fLeft);
-      fLeft << sequence.substr(0, END_LENGTH) + "\n+\n" + score.substr(0, END_LENGTH) + '\n';
-      int endPos = sequence.length()-END_LENGTH;
+      fLeft << sequence.substr(0, endLength) + "\n+\n" + score.substr(0, endLength) + '\n';
+      int endPos = sequence.length()-endLength;
       printModifiedHeader(header, fRight);
       fRight << sequence.substr(endPos) + "\n+\n" + score.substr(endPos) + '\n';
     }
@@ -114,22 +113,22 @@ void findInDeduped(){
 }
 
 
-int main(int argc, char* argv[]){ // <mutated_rows> <deduped_bam> <left> <right>
+int main(int argc, char* argv[]){ // <mutated_rows> <end_length> <deduped_bam> <left> <right>
   std::ios::sync_with_stdio(false); cin.tie(NULL);
   
   fRows.open(argv[1]);
-  fDeduped.open(argv[2]);
-  fLeft.open(argv[3], ios_base::app);
-  fRight.open(argv[4], ios_base::app);
+  fDeduped.open(argv[3]);
+  fLeft.open(argv[4], ios_base::app);
+  fRight.open(argv[5], ios_base::app);
 
-  clock_t t;
-  t = clock();
+  // clock_t t;
+  // t = clock();
 
-  storeEndMutations();
-  findInDeduped();
+  storeEndMutations(atoi(argv[2]));
+  findInDeduped(atoi(argv[2]));
 
-  cout << "----Done" << '\n';
-  cout << "------Executed in " << ((float)(clock()-t))/CLOCKS_PER_SEC << " seconds." << '\n';
+  // cout << "----Done" << '\n';
+  // cout << "------Executed in " << ((float)(clock()-t))/CLOCKS_PER_SEC << " seconds." << '\n';
 
   fRows.close();
   fDeduped.close();
