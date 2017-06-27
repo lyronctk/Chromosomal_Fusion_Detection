@@ -18,6 +18,7 @@ end_length=$3
 min_mapping_quality=$4
 sample_name=$(echo $bam | cut -d '_' -f 2- | cut -d '.' -f 1)
 ref_genome=/data/indexes/hg19.fa
+all_exons=/drive3/js358/permanent/bed_files/RefSeq_Gencodev17_022314.allexons.noRPnoNA.sorted.bed
 
 
 # ./editReference $ref_genome $normal
@@ -53,7 +54,10 @@ bowtie2 --local --no-unal --no-head $hg19_index  $sample_name.right.fq -p 8 > $s
 
 
 echo "----Finding discordant pairs"
-./discordantPairs $sample_name.remapped.left.txt $sample_name.remapped.right.txt $min_mapping_quality $sample_name.discordantpairs.txt
+./discordantPairs $sample_name.remapped.left.txt $sample_name.remapped.right.txt $all_exons $end_length $min_mapping_quality $sample_name.discordantpairs.details.unsorted.txt $sample_name.discordantpairs.depth.unsorted.txt
+(head -1 $sample_name.discordantpairs.details.unsorted.txt ; tail -n +2 $sample_name.discordantpairs.details.unsorted.txt | sort) > $sample_name.discordantpairs.details.txt
+(head -1 $sample_name.discordantpairs.depth.unsorted.txt ; tail -n +2 $sample_name.discordantpairs.depth.unsorted.txt | sort -k1,1nr) > $sample_name.discordantpairs.depth.txt
+rm $sample_name.discordantpairs.details.unsorted.txt $sample_name.discordantpairs.depth.unsorted.txt
 
 
 rm $sample_name.deduped.sam $sample_name.unmapped.fq $sample_name.left.fq $sample_name.right.fq $sample_name.refremoved.txt $sample_name.mutatedrows.sorted.txt 
