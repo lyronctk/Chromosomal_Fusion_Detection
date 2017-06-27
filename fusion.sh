@@ -1,7 +1,7 @@
 #!/bin/bash
 ##Written by Lyron Co Ting Keh 6/19/17
 
-## bash fusion.sh Sample_DLBCL021_Tumor.sorted.bam Sample_DLBCL021-Tumor.singleindex-deduped.sorted.bam 25 20
+## bash fusion.sh Sample_DLBCL021_Tumor.sorted.bam Sample_DLBCL021-Tumor.singleindex-deduped.sorted.bam 30 40
 
 if [ -z "$4" ]
 then
@@ -52,8 +52,8 @@ bowtie2 --local --no-unal --no-head $hg19_index $sample_name.left.fq -p 8 > $sam
 bowtie2 --local --no-unal --no-head $hg19_index  $sample_name.right.fq -p 8 > $sample_name.remapped.right.txt
 
 
-echo "----Compiling candidates"
-./candidates $sample_name.remapped.left.txt $sample_name.remapped.right.txt $min_mapping_quality $sample_name.candidates.txt 
+echo "----Finding discordant pairs"
+./discordantPairs $sample_name.remapped.left.txt $sample_name.remapped.right.txt $min_mapping_quality $sample_name.discordantpairs.txt
 
 
 rm $sample_name.deduped.sam $sample_name.unmapped.fq $sample_name.left.fq $sample_name.right.fq $sample_name.refremoved.txt $sample_name.mutatedrows.sorted.txt 
