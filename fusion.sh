@@ -33,7 +33,6 @@ echo "----Splitting reads..."
 ./splitUnmapped $sample_name.unmapped.fq $end_length $sample_name.left.fq $sample_name.right.fq
 
 
-#get mapped reads with at least 1 mutation on each end--S
 echo "----Subset mutated rows..."
 samtools view <(samtools fillmd -e -b $deduped_bam $ref_genome) | cut -f1,4,6,10  > $sample_name.refremoved.txt
 length_raw=$(head -1 $sample_name.refremoved.txt | cut -f 3)
@@ -60,5 +59,5 @@ echo "----Finding discordant pairs"
 rm $sample_name.discordantpairs.details.unsorted.txt $sample_name.discordantpairs.depth.unsorted.txt
 
 
-rm $sample_name.deduped.sam $sample_name.unmapped.fq $sample_name.left.fq $sample_name.right.fq $sample_name.refremoved.txt $sample_name.mutatedrows.sorted.txt 
+rm $sample_name.deduped.sam $sample_name.unmapped.fq $sample_name.left.fq $sample_name.right.fq $sample_name.refremoved.txt $sample_name.mutatedrows.sorted.txt $sample_name.remapped.left.txt $sample_name.remapped.right.txt 
 echo "----Done"

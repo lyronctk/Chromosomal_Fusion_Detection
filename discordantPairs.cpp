@@ -61,9 +61,8 @@ pair<string, int> findGene(int chr, int pos, int fragmentLength){
   vector<Exon> &chromosome = exons[chr];
   auto it = lower_bound(chromosome.begin(), chromosome.end(), pos,
                         [](const Exon &exon, const int value){  return exon.start < value; });
-
   for(int i=-5; i<=5; i++)
-    if(pos >= (it+i)->start && pos <= (it+i)->end && it >= chromosome.begin() && it <= chromosome.end())
+    if(it+i >= chromosome.begin() && it+i <= chromosome.end() && pos >= (it+i)->start && pos <= (it+i)->end)
       return {(it+i)->name, (it+i)->start+fragmentLength-1};
   return {"NON_EXONIC", 0};
 }
