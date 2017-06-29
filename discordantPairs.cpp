@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <assert.h>
 using namespace std;
 // sh local_discordant_c_r.sh
 
@@ -42,7 +43,7 @@ int chrToInt(string chr){
 
 
 vector<vector<Exon> > exons(25, vector<Exon>(1)); //[chr][exon]
-void storeExons(int fragmentLength){
+void storeExons(){
   string chr, name;
   int start, end;
   while(fExons >> chr >> start >> end >> name){
@@ -50,21 +51,40 @@ void storeExons(int fragmentLength){
     if(chrNum == -1)
       continue;
     
-    exons[chrNum].push_back({name, start-fragmentLength+1, end}); // subtract fragmentLength from start because the fragment does not need to completely be within the exon
+    exons[chrNum].push_back({name, start, end});
   }
   for(int i=1; i<=24; i++)
     sort(exons[i].begin(), exons[i].end(), exonCmpr);
 }
 
 
-pair<string, int> findGene(int chr, int pos, int fragmentLength){
+int getDist(int pos, int start, int end){
+  if(pos >= start && pos <= end)
+    return 0;
+  if(pos > end)
+    return pos-end;
+  return start-pos;
+}
+
+
+pair<string, int> findGene(int chr, int pos){
   vector<Exon> &chromosome = exons[chr];
   auto it = lower_bound(chromosome.begin(), chromosome.end(), pos,
                         [](const Exon &exon, const int value){  return exon.start < value; });
+
+  int minDist = INT_MAX;
+  pair<string, int> closest;
   for(int i=-5; i<=5; i++)
-    if(it+i >= chromosome.begin() && it+i <= chromosome.end() && pos >= (it+i)->start && pos <= (it+i)->end)
-      return {(it+i)->name, (it+i)->start+fragmentLength-1};
-  return {"NON_EXONIC", 0};
+    if(it+i >= chromosome.begin() && it+i <= chromosome.end()){
+      int dist = getDist(pos, (it+i)->start, (it+i)->end);
+      if(dist < minDist){
+        closest = {(it+i)->name, (it+i)->start};
+        minDist = dist;
+      }
+    }
+  
+  assert(minDist != INT_MAX && "Error: No genes found in chromosome.");
+  return closest;
 }
 
 
@@ -77,7 +97,7 @@ string alphabetize(string s1, string s2){
   
 unordered_map<string, int> fusionCtr; //eg. {MXRA8-PIP5K1B, 12} - how many times a discordant pair combination (eg chr1/chr2) happens
 unordered_map<string, vector<Read> > molecules; //{D87PMJN1:331:C528CACXX:7:2205:14374:10502:TGCCATCG, {read1, read2}} - keeps track of the different chromosomes a read-pair has seen so far
-void generateCandidates(int minMapQ, int fragmentLength, ifstream &fin){
+void generateCandidates(int minMapQ, ifstream &fin){
   string header, filler, chr;
   int mQ, pos;
   while(fin >> header >> filler >> chr >> pos >> mQ){
@@ -87,10 +107,10 @@ void generateCandidates(int minMapQ, int fragmentLength, ifstream &fin){
     if(header[header.size()-2] == '/'){
       header.pop_back(); header.pop_back(); 
     } 
-    pair<string, int> curGene = findGene(chrToInt(chr), pos, fragmentLength);
+    pair<string, int> curGene = findGene(chrToInt(chr), pos);
 
     unordered_map<string, vector<Read> >::iterator it = molecules.find(header);
-    if(it != molecules.end()){ //check if this fragment is the first of 4 possible (2 for each read pair)
+    if(it != molecules.end()){ 
       for(Read r : it->second){
         if(r.chr == chr && r.geneName == curGene.first)
            continue;
@@ -117,24 +137,24 @@ void generateCandidates(int minMapQ, int fragmentLength, ifstream &fin){
 
 void printDepths(){
   for(auto p : fusionCtr)
-    fDepth << p.second << '\t' << p.first << '\n';
+    fDepth << p.first << '\t' << p.second << '\n';
 }
 
 
-int main(int argc, char* argv[]){ // <left> <right> <allexons> <end_length> <min_mapping_quality> <details> <depth> 
+int main(int argc, char* argv[]){ // <left> <right> <allexons> <min_mapping_quality> <details> <depth> 
   std::ios::sync_with_stdio(false); cin.tie(NULL);
   
   fLeft.open(argv[1]);
   fRight.open(argv[2]);
   fExons.open(argv[3]);
-  fDetails.open(argv[6]);
-  fDepth.open(argv[7]);
+  fDetails.open(argv[5]);
+  fDepth.open(argv[6]);
 
 
   fDetails << "GENE1\tGENE2\tFUSION\tCHR1\tCHR2\tGENE1_START\tGENE2_START\tREAD1_POS\tREAD2_POS\n";
-  storeExons(atoi(argv[4]));
-  generateCandidates(atoi(argv[5]), atoi(argv[4]), fLeft);
-  generateCandidates(atoi(argv[5]), atoi(argv[4]), fRight);
+  storeExons();
+  generateCandidates(atoi(argv[4]), fLeft);
+  generateCandidates(atoi(argv[4]), fRight);
 
   fDepth << "FUSION\tDEPTH\n";
   printDepths();

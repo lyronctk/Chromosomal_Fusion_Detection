@@ -53,9 +53,9 @@ bowtie2 --local --no-unal --no-head $hg19_index  $sample_name.right.fq -p 8 -k 3
 
 
 echo "----Finding discordant pairs"
-./discordantPairs $sample_name.remapped.left.txt $sample_name.remapped.right.txt $all_exons $end_length $min_mapping_quality $sample_name.discordantpairs.details.unsorted.txt $sample_name.discordantpairs.depth.unsorted.txt
+./discordantPairs $sample_name.remapped.left.txt $sample_name.remapped.right.txt $all_exons $min_mapping_quality $sample_name.discordantpairs.details.unsorted.txt $sample_name.discordantpairs.depth.unsorted.txt
 (head -1 $sample_name.discordantpairs.details.unsorted.txt ; tail -n +2 $sample_name.discordantpairs.details.unsorted.txt | sort) > $sample_name.discordantpairs.details.txt
-(head -1 $sample_name.discordantpairs.depth.unsorted.txt ; tail -n +2 $sample_name.discordantpairs.depth.unsorted.txt | sort -k1,1nr) > $sample_name.discordantpairs.depth.txt
+(head -1 $sample_name.discordantpairs.depth.unsorted.txt ; tail -n +2 $sample_name.discordantpairs.depth.unsorted.txt | sort -k2,2nr) > $sample_name.discordantpairs.depth.txt
 rm $sample_name.discordantpairs.details.unsorted.txt $sample_name.discordantpairs.depth.unsorted.txt
 
 
