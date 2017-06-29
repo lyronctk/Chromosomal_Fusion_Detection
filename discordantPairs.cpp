@@ -5,7 +5,7 @@
 #include <vector>
 #include <algorithm>
 using namespace std;
-
+// sh local_discordant_c_r.sh
 
 struct Read{
   string chr, geneName;
@@ -91,13 +91,9 @@ void generateCandidates(int minMapQ, int fragmentLength, ifstream &fin){
 
     unordered_map<string, vector<Read> >::iterator it = molecules.find(header);
     if(it != molecules.end()){ //check if this fragment is the first of 4 possible (2 for each read pair)
-      bool isDup = false;
       for(Read r : it->second){
-        if(r.chr == chr){ //2 chromosomes mapped are the same, no fusion
-          if(r.pos == pos)
-            isDup = true;
-          continue;  
-        }
+        if(r.chr == chr && r.geneName == curGene.first)
+           continue;
 
         if(r.geneName < curGene.first) //alphabetized output
           fDetails << r.geneName << '\t' << curGene.first << '\t' << r.geneName << '-' << curGene.first << '\t' << r.chr << '\t' << chr << '\t' << r.geneStart << '\t' << curGene.second << '\t' << r.pos << '\t' << pos << '\n'; 
@@ -108,8 +104,7 @@ void generateCandidates(int minMapQ, int fragmentLength, ifstream &fin){
         if(ret.second == false) 
           (ret.first->second)++; //keep track of how many times certain discordant read pairs show up
       }
-      if(!isDup)
-        it->second.push_back({chr, curGene.first, pos, curGene.second});
+      it->second.push_back({chr, curGene.first, pos, curGene.second});
     }
     else{
       vector<Read> vec = {{chr, curGene.first, pos, curGene.second}};

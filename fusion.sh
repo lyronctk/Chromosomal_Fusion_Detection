@@ -48,8 +48,8 @@ samtools view $deduped_bam > $sample_name.deduped.sam
 
 echo "----Mapping..."
 hg19_index=/home/alizadehlab/lyronctk/shared/lyronctk/hg19_index/bowtie2/hg19
-bowtie2 --local --no-unal --no-head $hg19_index $sample_name.left.fq -p 8 > $sample_name.remapped.left.txt
-bowtie2 --local --no-unal --no-head $hg19_index  $sample_name.right.fq -p 8 > $sample_name.remapped.right.txt
+bowtie2 --local --no-unal --no-head $hg19_index $sample_name.left.fq -p 8 -k 3 > $sample_name.remapped.left.txt
+bowtie2 --local --no-unal --no-head $hg19_index  $sample_name.right.fq -p 8 -k 3 > $sample_name.remapped.right.txt
 
 
 echo "----Finding discordant pairs"
